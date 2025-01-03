@@ -3,19 +3,7 @@ name: Create Release
 on:
   push:
     branches: [ main ]
-    tags:
-      - 'v*'
   workflow_dispatch:
-    inputs:
-      release_type:
-        description: 'Release Type'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-        - patch
-        - minor
-        - major
 
 permissions:
   contents: write
@@ -35,32 +23,9 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Get latest tag
-      id: get_latest_tag
+    - name: Set fixed version
       run: |
-        $latest_tag = $(git describe --tags --abbrev=0 2>$null)
-        if (-not $latest_tag) { $latest_tag = 'v0.0.0' }
-        echo "LATEST_TAG=$latest_tag" >> $env:GITHUB_ENV
-      shell: pwsh
-        
-    - name: Generate new version
-      id: generate_version
-      run: |
-        $latest = $env:LATEST_TAG -replace 'v', ''
-        $major, $minor, $patch = $latest.Split('.')
-        
-        if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
-          switch ('${{ inputs.release_type }}') {
-            'major' { $major = [int]$major + 1; $minor = 0; $patch = 0 }
-            'minor' { $minor = [int]$minor + 1; $patch = 0 }
-            'patch' { $patch = [int]$patch + 1 }
-          }
-        } else {
-          $patch = [int]$patch + 1
-        }
-        
-        $new_version = "v${major}.${minor}.${patch}"
-        echo "NEW_VERSION=$new_version" >> $env:GITHUB_ENV
+        echo "NEW_VERSION=v0.0.1" >> $env:GITHUB_ENV
       shell: pwsh
         
     - name: Install dependencies
@@ -68,17 +33,69 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
+
+    - name: Create Version File
+      run: |
+        $version_info = @"
+        VSVersionInfo(
+          ffi=FixedFileInfo(
+            filevers=(0,0,1,0),
+            prodvers=(0,0,1,0),
+            mask=0x3f,
+            flags=0x0,
+            OS=0x40004,
+            fileType=0x1,
+            subtype=0x0,
+            date=(0, 0)
+          ),
+          kids=[
+            StringFileInfo([
+              StringTable(
+                u'040904B0',
+                [StringStruct(u'CompanyName', u'Cluster-Mate'),
+                StringStruct(u'FileDescription', u'Clustering Analysis Tool'),
+                StringStruct(u'FileVersion', u'0.0.1'),
+                StringStruct(u'InternalName', u'clustering_gui'),
+                StringStruct(u'LegalCopyright', u'Copyright (c) 2024'),
+                StringStruct(u'OriginalFilename', u'clustering_gui.exe'),
+                StringStruct(u'ProductName', u'Cluster-Mate'),
+                StringStruct(u'ProductVersion', u'0.0.1')])
+            ]),
+            VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+          ]
+        )
+        "@ | Out-File -Encoding utf8 version_info.txt
+      shell: pwsh
         
     - name: Build with PyInstaller
       run: |
-        pyinstaller GUI/main.py --name clustering_gui --windowed --onefile --icon=GUI/assets/icon.ico --add-data "GUI;GUI"
+        pyinstaller --clean ^
+          --name clustering_gui ^
+          --windowed ^
+          --onefile ^
+          --icon=GUI/assets/icon.ico ^
+          --version-file=version_info.txt ^
+          --add-data "GUI;GUI" ^
+          --collect-all customtkinter ^
+          --collect-all PIL ^
+          --collect-all pandas ^
+          --collect-all numpy ^
+          --collect-all sklearn ^
+          GUI/main.py
+        
+    - name: Delete old release
+      run: |
+        gh release delete v0.0.1 --yes
+      continue-on-error: true
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ env.NEW_VERSION }}
-        name: Release ${{ env.NEW_VERSION }}
+        tag_name: v0.0.1
+        name: Debug Build
         files: |
           dist/clustering_gui.exe
         draft: false

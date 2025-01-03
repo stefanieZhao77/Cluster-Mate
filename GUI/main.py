@@ -5,9 +5,9 @@ from tkinter import messagebox, filedialog
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from .frames.side_menu import SideMenu
-from .frames.dataset_frame import DatasetFrame
-from .clustering.train import main
+from frames.side_menu import SideMenu
+from frames.dataset_frame import DatasetFrame
+from clustering.train import main
 from PIL import Image, ImageTk
 
 class ClusteringGUI(ctk.CTk):
