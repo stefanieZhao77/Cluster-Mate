@@ -3,14 +3,23 @@ name: Create Release
 on:
   push:
     tags:
-      - 'v0.0.1'
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
     
     steps:
+    - name: Debugging Information
+      run: |
+        echo "Triggered by: ${{ github.event_name }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "Tag: ${{ github.ref_name }}"
+    
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -25,7 +34,7 @@ jobs:
         
     - name: Build with PyInstaller
       run: |
-        pyinstaller GUI/main.py --name clustering_gui --windowed --onefile --icon=GUI/assets/icon.jpg --add-data "GUI;GUI"
+        pyinstaller GUI/main.py --name clustering_gui --windowed --onefile --icon=GUI/assets/icon.ico --add-data "GUI;GUI"
         
     - name: Create Release
       id: create_release
