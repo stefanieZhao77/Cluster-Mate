@@ -68,19 +68,20 @@ jobs:
       shell: pwsh
         
     - name: Build with PyInstaller
+      shell: pwsh
       run: |
-        pyinstaller --clean ^
-          --name clustering_gui ^
-          --windowed ^
-          --onefile ^
-          --icon=GUI/assets/icon.ico ^
-          --version-file=version_info.txt ^
-          --add-data "GUI;GUI" ^
-          --collect-all customtkinter ^
-          --collect-all PIL ^
-          --collect-all pandas ^
-          --collect-all numpy ^
-          --collect-all sklearn ^
+        pyinstaller --clean `
+          --name clustering_gui `
+          --windowed `
+          --onefile `
+          --icon=GUI/assets/icon.ico `
+          --version-file=version_info.txt `
+          --add-data "GUI;GUI" `
+          --collect-all customtkinter `
+          --collect-all PIL `
+          --collect-all pandas `
+          --collect-all numpy `
+          --collect-all sklearn `
           GUI/main.py
         
     - name: Delete old release
