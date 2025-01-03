@@ -1,13 +1,25 @@
 import os
+import sys
 import shutil
 import customtkinter as ctk
 from tkinter import messagebox, filedialog
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from frames.side_menu import SideMenu
-from frames.dataset_frame import DatasetFrame
-from clustering.train import main
+
+# Add the current directory to Python path
+if getattr(sys, 'frozen', False):
+    # If the application is run as a bundle
+    application_path = sys._MEIPASS
+else:
+    # If the application is run from a Python interpreter
+    application_path = os.path.dirname(os.path.abspath(__file__))
+
+sys.path.insert(0, os.path.dirname(application_path))
+
+from GUI.frames.side_menu import SideMenu
+from GUI.frames.dataset_frame import DatasetFrame
+from GUI.clustering.train import main
 from PIL import Image, ImageTk
 
 class ClusteringGUI(ctk.CTk):

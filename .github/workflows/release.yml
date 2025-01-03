@@ -66,23 +66,56 @@ jobs:
         )
         "@ | Out-File -Encoding utf8 version_info.txt
       shell: pwsh
+
+    - name: Create PyInstaller Spec
+      shell: pwsh
+      run: |
+        $spec_content = @"
+        # -*- mode: python ; coding: utf-8 -*-
+
+        a = Analysis(
+            ['GUI/main.py'],
+            pathex=['.'],
+            binaries=[],
+            datas=[('GUI', 'GUI')],
+            hiddenimports=['PIL', 'PIL._tkinter_finder'],
+            hookspath=[],
+            hooksconfig={},
+            runtime_hooks=[],
+            excludes=[],
+            noarchive=False,
+        )
+        pyz = PYZ(a.pure)
+
+        exe = EXE(
+            pyz,
+            a.scripts,
+            a.binaries,
+            a.datas,
+            [],
+            name='clustering_gui',
+            debug=False,
+            bootloader_ignore_signals=False,
+            strip=False,
+            upx=True,
+            upx_exclude=[],
+            runtime_tmpdir=None,
+            console=False,
+            disable_windowed_traceback=False,
+            argv_emulation=False,
+            target_arch=None,
+            codesign_identity=None,
+            entitlements_file=None,
+            version='version_info.txt',
+            icon='GUI/assets/icon.ico'
+        )
+        "@
+        $spec_content | Out-File -Encoding utf8 clustering_gui.spec
         
     - name: Build with PyInstaller
       shell: pwsh
       run: |
-        pyinstaller --clean `
-          --name clustering_gui `
-          --windowed `
-          --onefile `
-          --icon=GUI/assets/icon.ico `
-          --version-file=version_info.txt `
-          --add-data "GUI;GUI" `
-          --collect-all customtkinter `
-          --collect-all PIL `
-          --collect-all pandas `
-          --collect-all numpy `
-          --collect-all sklearn `
-          GUI/main.py
+        pyinstaller --clean clustering_gui.spec
         
     - name: Delete old release
       run: |
