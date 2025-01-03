@@ -2,21 +2,30 @@ name: Create Release
 
 on:
   push:
+    branches: [ main ]
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release Type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+permissions:
+  contents: write
+  discussions: write
 
 jobs:
   build:
     runs-on: windows-latest
     
     steps:
-    - name: Debugging Information
-      run: |
-        echo "Triggered by: ${{ github.event_name }}"
-        echo "Ref: ${{ github.ref }}"
-        echo "Tag: ${{ github.ref_name }}"
-    
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
@@ -25,6 +34,34 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
+
+    - name: Get latest tag
+      id: get_latest_tag
+      run: |
+        $latest_tag = $(git describe --tags --abbrev=0 2>$null)
+        if (-not $latest_tag) { $latest_tag = 'v0.0.0' }
+        echo "LATEST_TAG=$latest_tag" >> $env:GITHUB_ENV
+      shell: pwsh
+        
+    - name: Generate new version
+      id: generate_version
+      run: |
+        $latest = $env:LATEST_TAG -replace 'v', ''
+        $major, $minor, $patch = $latest.Split('.')
+        
+        if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+          switch ('${{ inputs.release_type }}') {
+            'major' { $major = [int]$major + 1; $minor = 0; $patch = 0 }
+            'minor' { $minor = [int]$minor + 1; $patch = 0 }
+            'patch' { $patch = [int]$patch + 1 }
+          }
+        } else {
+          $patch = [int]$patch + 1
+        }
+        
+        $new_version = "v${major}.${minor}.${patch}"
+        echo "NEW_VERSION=$new_version" >> $env:GITHUB_ENV
+      shell: pwsh
         
     - name: Install dependencies
       run: |
@@ -40,6 +77,8 @@ jobs:
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: ${{ env.NEW_VERSION }}
+        name: Release ${{ env.NEW_VERSION }}
         files: |
           dist/clustering_gui.exe
         draft: false
