@@ -2,8 +2,19 @@ name: Create Release
 
 on:
   push:
-    branches: [ main ]
+    tags:
+      - 'v*'  # Trigger on version tags
   workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version Type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch   # v1.0.0 -> v1.0.1
+        - minor   # v1.0.0 -> v1.1.0
+        - major   # v1.0.0 -> v2.0.0
 
 permissions:
   contents: write
@@ -23,10 +34,32 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Set fixed version
-      run: |
-        echo "NEW_VERSION=v0.0.1" >> $env:GITHUB_ENV
+    - name: Get latest version
+      id: get_version
       shell: pwsh
+      run: |
+        # Get the latest tag or default to v0.0.0
+        $latest_tag = $(git describe --tags --abbrev=0 2>$null)
+        if (-not $latest_tag) { $latest_tag = 'v0.0.0' }
+        
+        # Parse version numbers
+        $version = $latest_tag -replace 'v', ''
+        $major, $minor, $patch = $version.Split('.')
+        
+        # Increment version based on input or tag
+        if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+          switch ('${{ inputs.version_type }}') {
+            'major' { $major = [int]$major + 1; $minor = 0; $patch = 0 }
+            'minor' { $minor = [int]$minor + 1; $patch = 0 }
+            'patch' { $patch = [int]$patch + 1 }
+          }
+          $new_version = "v${major}.${minor}.${patch}"
+        } else {
+          $new_version = '${{ github.ref_name }}'
+        }
+        
+        echo "NEW_VERSION=$new_version" >> $env:GITHUB_ENV
+        echo "VERSION_NUMBER=$($new_version -replace 'v','')" >> $env:GITHUB_ENV
         
     - name: Install dependencies
       run: |
@@ -36,11 +69,15 @@ jobs:
 
     - name: Create Version File
       run: |
+        $version = '${{ env.VERSION_NUMBER }}'
+        $version_nums = $version.Split('.')
+        $version_tuple = "$($version_nums[0]),$($version_nums[1]),$($version_nums[2]),0"
+        
         $version_info = @"
         VSVersionInfo(
           ffi=FixedFileInfo(
-            filevers=(0,0,1,0),
-            prodvers=(0,0,1,0),
+            filevers=($version_tuple),
+            prodvers=($version_tuple),
             mask=0x3f,
             flags=0x0,
             OS=0x40004,
@@ -54,12 +91,12 @@ jobs:
                 u'040904B0',
                 [StringStruct(u'CompanyName', u'Cluster-Mate'),
                 StringStruct(u'FileDescription', u'Clustering Analysis Tool'),
-                StringStruct(u'FileVersion', u'0.0.1'),
-                StringStruct(u'InternalName', u'clustering_gui'),
+                StringStruct(u'FileVersion', u'${{ env.VERSION_NUMBER }}'),
+                StringStruct(u'InternalName', u'cluster_mate'),
                 StringStruct(u'LegalCopyright', u'Copyright (c) 2024'),
-                StringStruct(u'OriginalFilename', u'clustering_gui.exe'),
+                StringStruct(u'OriginalFilename', u'cluster_mate.exe'),
                 StringStruct(u'ProductName', u'Cluster-Mate'),
-                StringStruct(u'ProductVersion', u'0.0.1')])
+                StringStruct(u'ProductVersion', u'${{ env.VERSION_NUMBER }}')])
             ]),
             VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
           ]
@@ -93,7 +130,7 @@ jobs:
             a.binaries,
             a.datas,
             [],
-            name='clustering_gui',
+            name='cluster_mate',
             debug=False,
             bootloader_ignore_signals=False,
             strip=False,
@@ -110,28 +147,21 @@ jobs:
             icon='GUI/assets/icon.ico'
         )
         "@
-        $spec_content | Out-File -Encoding utf8 clustering_gui.spec
+        $spec_content | Out-File -Encoding utf8 cluster_mate.spec
         
     - name: Build with PyInstaller
       shell: pwsh
       run: |
-        pyinstaller --clean clustering_gui.spec
-        
-    - name: Delete old release
-      run: |
-        gh release delete v0.0.1 --yes
-      continue-on-error: true
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        pyinstaller --clean cluster_mate.spec
         
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v0.0.1
-        name: Debug Build
+        tag_name: ${{ env.NEW_VERSION }}
+        name: Release ${{ env.NEW_VERSION }}
         files: |
-          dist/clustering_gui.exe
+          dist/cluster_mate.exe
         draft: false
         prerelease: false
       env:
