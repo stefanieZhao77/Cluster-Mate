@@ -4,7 +4,21 @@ import numpy as np
 import pandas as pd
 
 def plot_pca_components(X_pca, labels, model_type):
-    """Plot all principal components in a pairwise grid"""
+    """
+    Create a grid of scatter plots showing pairwise relationships between PCA components.
+    
+    Args:
+        X_pca: PCA-transformed data matrix
+        labels: Cluster labels for coloring the points
+        model_type: Type of clustering algorithm used (for plot title)
+        
+    The function creates a figure with n_components x n_components subplots where:
+    - Diagonal plots show histograms of individual components
+    - Off-diagonal plots show scatter plots of component pairs
+    - Points are colored according to their cluster labels
+    
+    The plot is saved to metrics/cluster_plots/ directory.
+    """
     n_components = X_pca.shape[1]
     fig, axes = plt.subplots(n_components, n_components, figsize=(15, 15))
 
@@ -42,7 +56,19 @@ def plot_pca_components(X_pca, labels, model_type):
     plt.close()
 
 def plot_pca_explained_variance(pca, features):
-    """Plot explained variance ratio and cumulative explained variance"""
+    """
+    Create plots showing the explained variance of PCA components.
+    
+    Args:
+        pca: Fitted PCA model
+        features: List of original feature names
+        
+    Creates two subplots:
+    1. Bar plot of explained variance ratio for each component
+    2. Line plot of cumulative explained variance
+    
+    The plot is saved to metrics/cluster_plots/ directory.
+    """
     plt.figure(figsize=(12, 5))
 
     # Plot 1: Explained variance ratio
@@ -74,7 +100,19 @@ def plot_pca_explained_variance(pca, features):
     plt.close()
 
 def plot_feature_correlation(data, features):
-    """Plot correlation matrix for features"""
+    """
+    Create a heatmap showing correlations between original features.
+    
+    Args:
+        data: DataFrame containing the original features
+        features: List of feature names to include
+        
+    The correlation matrix is visualized using a heatmap with:
+    - Color scale from -1 (negative correlation) to 1 (positive correlation)
+    - Numerical correlation values annotated in each cell
+    
+    The plot is saved to metrics/cluster_plots/ directory.
+    """
     plt.figure(figsize=(12, 8))
     
     # Calculate correlation matrix
@@ -97,7 +135,21 @@ def plot_feature_correlation(data, features):
     plt.close()
 
 def plot_feature_importance(pca, features):
-    """Plot feature importance heatmap based on PCA components"""
+    """
+    Create a heatmap showing the importance of original features in PCA components.
+    
+    Args:
+        pca: Fitted PCA model
+        features: List of original feature names
+        
+    The function:
+    1. Extracts absolute values of PCA loadings
+    2. Creates a heatmap showing feature importance in each component
+    3. Saves both the visualization and raw loadings data
+    
+    Returns:
+        DataFrame: PCA loadings for each feature and component
+    """
     # Get the absolute value of loadings
     loadings = np.abs(pca.components_)
 

@@ -5,7 +5,20 @@ from tkinter import filedialog
 from ..widgets.scrollable_menu import CTkScrollableOptionMenu
 
 class DatasetFrame(ctk.CTkFrame):
+    """
+    A custom frame widget for handling dataset configuration in the clustering tool.
+    Provides UI elements for file selection, column mapping, and feature selection.
+    """
     def __init__(self, master, frame_id, on_remove=None, **kwargs):
+        """
+        Initialize a new dataset frame.
+        
+        Args:
+            master: Parent widget
+            frame_id: Unique identifier for this frame
+            on_remove: Callback function when frame is removed
+            **kwargs: Additional keyword arguments for CTkFrame
+        """
         super().__init__(master, **kwargs)
         self.frame_id = frame_id
         self.on_remove = on_remove
@@ -13,6 +26,11 @@ class DatasetFrame(ctk.CTkFrame):
         self.setup_ui()
         
     def setup_ui(self):
+        """
+        Creates and arranges all UI elements in the frame.
+        Includes file selection, link column selection, date column selection,
+        time bias input, and feature selection checkboxes.
+        """
         # File selection row
         self.file_frame = ctk.CTkFrame(self)
         self.file_frame.pack(fill="x", padx=5, pady=2)
@@ -114,6 +132,11 @@ class DatasetFrame(ctk.CTkFrame):
         self.features_box.grid_columnconfigure((0,1,2), weight=1)
 
     def browse_file(self):
+        """
+        Opens a file dialog for selecting dataset files.
+        Supports Excel and CSV formats.
+        Updates the UI elements with columns from the selected file.
+        """
         filetypes = (
             ('Excel files', '*.xlsx'),
             ('CSV files', '*.csv')
@@ -152,6 +175,12 @@ class DatasetFrame(ctk.CTkFrame):
                 messagebox.showerror("Error", f"Error loading file: {str(e)}")
 
     def update_feature_checkboxes(self, columns):
+        """
+        Updates the feature selection area with checkboxes for each column in the dataset.
+        
+        Args:
+            columns: List of column names from the loaded dataset
+        """
         # Clear existing checkboxes
         for widget in self.features_box.winfo_children():
             widget.destroy()
@@ -176,10 +205,20 @@ class DatasetFrame(ctk.CTkFrame):
             self.feature_vars[col] = var
 
     def remove_frame(self):
+        """
+        Removes this frame from the parent widget.
+        Calls the on_remove callback if provided.
+        """
         if self.on_remove:
             self.on_remove(self)
 
     def get_data(self):
+        """
+        Retrieves the current configuration of the dataset frame.
+        
+        Returns:
+            dict: Contains file path, selected columns, time bias, and selected features
+        """
         return {
             'file': self.file_entry.get(),
             'link_column': self.link_combobox.get(),
@@ -188,3 +227,13 @@ class DatasetFrame(ctk.CTkFrame):
             'baseline_type': self.baseline_type_var.get() if self.baseline_type_var else None,
             'selected_features': [col for col, var in self.feature_vars.items() if var.get()]
         } 
+
+    def repack_before(self, widget):
+        """
+        Repacks this frame before the specified widget in the parent container.
+        
+        Args:
+            widget: The widget before which this frame should be packed
+        """
+        self.pack_forget()
+        self.pack(fill="x", padx=10, pady=5, before=widget) 

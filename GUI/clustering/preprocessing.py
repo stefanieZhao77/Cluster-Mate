@@ -5,7 +5,30 @@ from sklearn.decomposition import PCA
 from .visualization import plot_feature_correlation, plot_pca_explained_variance
 
 def preprocess_data(data, n_components=3, random_state=42, all_features=None):
-    """Preprocess the data by selecting relevant features, scaling, and applying PCA"""
+    """
+    Preprocess the data for clustering by performing feature selection, scaling, and dimensionality reduction.
+    
+    Args:
+        data: Input DataFrame containing all features
+        n_components: Number of PCA components to generate
+        random_state: Random seed for reproducibility
+        all_features: List of feature names to use for clustering
+        
+    Returns:
+        tuple: (
+            pca_transformed_data,
+            scaled_original_data,
+            pca_model,
+            feature_names,
+            valid_row_indices
+        )
+        
+    The function performs the following steps:
+    1. Converts features to numeric and handles missing values
+    2. Scales the features using StandardScaler
+    3. Applies PCA for dimensionality reduction
+    4. Generates correlation and explained variance plots
+    """
     # Drop rows with missing values and convert to numeric, replacing invalid values with NaN
     all_features_data = data[all_features].apply(pd.to_numeric, errors="coerce")
 
